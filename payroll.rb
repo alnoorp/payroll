@@ -27,7 +27,7 @@ class Employee
     end
 
     def list_employees(filename)
-      EmployeeReader.new(filename).employees.each do |employee|
+      EmployeeReader.new(filename).list.each do |employee|
         puts employee.name
       end
     end
@@ -159,7 +159,7 @@ class EmployeeReader
     @employees
   end
 
-  def employees
+  def list
     @employees
   end
 end
@@ -167,11 +167,11 @@ end
 filename = 'employee_data.csv'
 employees = EmployeeReader.new(filename)
 
-# Employee.list_employees(filename) # list of employees
+Employee.list_employees(filename) # list of employees
 
 sales_file = 'sales.csv'
 
-employees.employees.each do |person|
+employees.list.each do |person|
   puts "***#{person.name}***"
   puts "Gross Salary: $#{person.gross_salary(sales_file).floor_to(2)}"
   puts "Commission: $#{person.commission(sales_file).floor_to(2)}" if person.methods.include?(:commission)
