@@ -14,6 +14,7 @@ class Employee
   def initialize(data = {})
     @name = data['Name']
     @base_salary = data['Base Salary'].to_f
+    @sales = []
   end
 
   def gross_salary(filename)
@@ -24,13 +25,21 @@ class Employee
     gross_salary(filename) * ( 1 - Employee.tax_rate )
   end
 
+  def add_sale(sale)
+    @sales << sale
+  end
+
   class << self
     def tax_rate
       0.3
     end
 
     def all_employees
-      @all_employees
+      @@all_employees
+    end
+
+    def employee_named(name)
+      @@all_employees.find{|employee| employee.name.include?(name) }
     end
 
     def load_employees(filename)
@@ -148,15 +157,19 @@ end
 
 class Sale
   attr_reader :last_name, :gross_sale_value
-  def initialize(last_name, gross_sale_value)
-    @last_name = last_name
-    @gross_sale_value = gross_sale_value
+  def initialize(data)
+    @last_name = data['last_name']
+    @gross_sale_value = data['gross_sale_value'].to_f
   end
 
   def self.sales_list(filename)
     @sales_array = []
     CSV.foreach(filename, headers: true) do |row|
-      @sales_array << Sale.new(row['last_name'], row['gross_sale_value'].to_f)
+      data = row.to_hash
+      sale = Sale.new(data)
+      @sales_array << sale
+      found_employee = Employee.employee_named(row["last_name"])
+      found_employee.add_sale(sale)
     end
     @sales_array
   end
