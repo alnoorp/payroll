@@ -8,8 +8,9 @@ class Float
 end
 
 class Employee
+  @@all_employees = []
   attr_reader :name, :base_salary
-  #def initialize(name, base_salary)
+
   def initialize(data = {})
     @name = data['Name']
     @base_salary = data['Base Salary'].to_f
@@ -28,10 +29,24 @@ class Employee
       0.3
     end
 
-    def list_employees(filename)
-      EmployeeReader.new(filename).list.each do |employee|
-        puts employee.name
+    def all_employees
+      @all_employees
+    end
+
+    def load_employees(filename)
+      CSV.foreach(filename, headers: true) do |row|
+        data = row.to_hash
+        if row['Type'] == 'Commission'
+          @@all_employees << CommissionSalesPerson.new(data)
+        elsif row['Type'] == 'Quota'
+          @@all_employees << QuotaSalesPerson.new(data)
+        elsif row['Type'] == 'Owner'
+          @@all_employees << Owner.new(data)
+        else
+          @@all_employees << Employee.new(data)
+        end
       end
+      @@all_employees
     end
   end
 end
@@ -85,13 +100,7 @@ class CommissionSalesPerson < Employee
   end
 
   def commission(filename)
-    gross_sales = 0
-    Sale.sales_list(filename).each do |person|
-      if self.name.include?(person.last_name)
-        gross_sales += person.gross_sale_value
-      end
-    end
-    gross_sales * @commission
+    my_sales(filename).inject(:+) * @commission
   end
 
   def gross_salary(filename)
@@ -154,38 +163,12 @@ class Sale
 
 end
 
-class EmployeeReader
-
-  def initialize(filename)
-    @employees = []
-    CSV.foreach(filename, headers: true) do |row|
-      data = row.to_hash
-      if row['Type'] == 'Commission'
-        @employees << CommissionSalesPerson.new(data)
-      elsif row['Type'] == 'Quota'
-        @employees << QuotaSalesPerson.new(data)
-      elsif row['Type'] == 'Owner'
-        @employees << Owner.new(data)
-      else
-        @employees << Employee.new(data)
-      end
-    end
-    @employees
-  end
-
-  def list
-    @employees
-  end
-end
-
 filename = 'employee_data.csv'
-employees = EmployeeReader.new(filename)
-
-# Employee.list_employees(filename) # list of employees
+employees = Employee.load_employees(filename)
 
 sales_file = 'sales.csv'
-
-employees.list.each do |person|
+# binding.pry
+employees.each do |person|
   puts "***#{person.name}***"
   puts "Gross Salary: $#{person.gross_salary(sales_file).floor_to(2)}"
   puts "Commission: $#{person.commission(sales_file).floor_to(2)}" if person.methods.include?(:commission)
