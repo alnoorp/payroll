@@ -1,4 +1,5 @@
 require 'csv'
+require 'pry'
 
 class Float
   def floor_to(x)
@@ -8,9 +9,10 @@ end
 
 class Employee
   attr_reader :name, :base_salary
-  def initialize(name, base_salary)
-    @name = name
-    @base_salary = base_salary
+  #def initialize(name, base_salary)
+  def initialize(data = {})
+    @name = data['Name']
+    @base_salary = data['Base Salary'].to_f
   end
 
   def gross_salary(filename)
@@ -36,10 +38,10 @@ end
 
 class Owner < Employee
 
-  def initialize(name, base_salary, quota, bonus)
-    super(name, base_salary)
-    @quota = quota
-    @bonus = bonus
+  def initialize(data = {})
+    super(data)
+    @quota = data['Quota'].to_f
+    @bonus = data['Bonus'].to_f
   end
 
   def gross_salary(filename)
@@ -67,9 +69,9 @@ end
 
 class CommissionSalesPerson < Employee
 
-  def initialize(name, base_salary, commission)
-    super(name, base_salary)
-    @commission = commission
+  def initialize(data = {})
+    super(data)
+    @commission = data['Commission'].to_f
   end
 
   def commission(filename)
@@ -94,10 +96,10 @@ end
 
 class QuotaSalesPerson < Employee
   attr_reader :quota, :bonus
-  def initialize(name, base_salary, quota, bonus)
-    super(name, base_salary)
-    @quota = quota
-    @bonus = bonus
+  def initialize(data = {})
+    super(data)
+    @quota = data['Quota'].to_f
+    @bonus = data['Bonus'].to_f
   end
 
   def gross_salary(filename)
@@ -146,14 +148,15 @@ class EmployeeReader
   def initialize(filename)
     @employees = []
     CSV.foreach(filename, headers: true) do |row|
+      data = row.to_hash
       if row['Type'] == 'Commission'
-        @employees << CommissionSalesPerson.new(row['Name'], row['Base Salary'].to_f, row['Commission'].to_f)
+        @employees << CommissionSalesPerson.new(data)
       elsif row['Type'] == 'Quota'
-        @employees << QuotaSalesPerson.new(row['Name'], row['Base Salary'].to_f, row['Quota'].to_f, row['Bonus'].to_f)
+        @employees << QuotaSalesPerson.new(data)
       elsif row['Type'] == 'Owner'
-        @employees << Owner.new(row['Name'], row['Base Salary'].to_f, row['Quota'].to_f, row['Bonus'].to_f)
+        @employees << Owner.new(data)
       else
-        @employees << Employee.new(row['Name'], row['Base Salary'].to_f)
+        @employees << Employee.new(data)
       end
     end
     @employees
@@ -167,7 +170,7 @@ end
 filename = 'employee_data.csv'
 employees = EmployeeReader.new(filename)
 
-Employee.list_employees(filename) # list of employees
+# Employee.list_employees(filename) # list of employees
 
 sales_file = 'sales.csv'
 
