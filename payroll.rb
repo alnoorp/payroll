@@ -1,5 +1,4 @@
 require 'csv'
-require 'pry'
 
 class Float
   def floor_to(x)
@@ -17,16 +16,28 @@ class Employee
     @sales = []
   end
 
-  def gross_salary(filename)
-    (@base_salary / 12)
+  def monthly_salary
+    @base_salary / 12
   end
 
-  def net_pay(filename)
-    gross_salary(filename) * ( 1 - Employee.tax_rate )
+  def gross_salary
+    monthly_salary
+  end
+
+  def net_pay
+    gross_salary * ( 1 - Employee.tax_rate )
   end
 
   def add_sale(sale)
     @sales << sale
+  end
+
+  def total_sales
+    @total = 0
+    @sales.each do |sale|
+      @total += sale.gross_sale_value
+    end
+    @total
   end
 
   class << self
@@ -68,26 +79,26 @@ class Owner < Employee
     @bonus = data['Bonus'].to_f
   end
 
-  def gross_salary(filename)
-    if exceed_quota?(filename)
-      (@base_salary / 12 + @bonus)
+  def gross_salary
+    if exceed_quota?
+      monthly_salary + @bonus
     else
-      (@base_salary / 12)
+      monthly_salary
     end
   end
 
-  def net_pay(filename)
-    gross_salary(filename) * ( 1 - Employee.tax_rate )
+  def net_pay
+    gross_salary * ( 1 - Employee.tax_rate )
   end
 
   private
 
-  def exceed_quota?(filename)
-    @gross_sales = 0
-    Sale.sales_list(filename).each do |person|
-      @gross_sales += person.gross_sale_value
+  def exceed_quota?
+    grand_total_sales = 0
+    @@all_employees.each do |employee|
+      grand_total_sales += employee.total_sales
     end
-    @gross_sales >= @quota
+    grand_total_sales > @quota
   end
 end
 
@@ -98,26 +109,16 @@ class CommissionSalesPerson < Employee
     @commission = data['Commission'].to_f
   end
 
-  def my_sales(filename)
-    @my_sales = []
-    Sale.sales_list(filename).each do |row|
-      if self.name.include?(row.last_name)
-        @my_sales << row.gross_sale_value
-      end
-    end
-    @my_sales
+  def commission
+    total_sales * @commission
   end
 
-  def commission(filename)
-    my_sales(filename).inject(:+) * @commission
+  def gross_salary
+    monthly_salary
   end
 
-  def gross_salary(filename)
-    (@base_salary / 12)
-  end
-
-  def net_pay(filename)
-    (gross_salary(filename) + commission(filename)) * ( 1 - Employee.tax_rate )
+  def net_pay
+    (gross_salary + commission) * ( 1 - Employee.tax_rate )
   end
 
 end
@@ -130,28 +131,22 @@ class QuotaSalesPerson < Employee
     @bonus = data['Bonus'].to_f
   end
 
-  def gross_salary(filename)
-    if exceed_quota?(filename)
-      (@base_salary / 12 + bonus)
+  def gross_salary
+    if exceed_quota?
+      monthly_salary + @bonus
     else
-      (@base_salary / 12)
+      monthly_salary
     end
   end
 
-  def net_pay(filename)
-    gross_salary(filename) * ( 1 - Employee.tax_rate )
+  def net_pay
+    gross_salary * ( 1 - Employee.tax_rate )
   end
 
   private
 
-  def exceed_quota?(filename)
-    @gross_sales = 0
-    Sale.sales_list(filename).each do |person|
-      if self.name.include?(person.last_name)
-        @gross_sales += person.gross_sale_value
-      end
-    end
-    @gross_sales >= @quota
+  def exceed_quota?
+    total_sales > @quota
   end
 end
 
@@ -168,26 +163,24 @@ class Sale
       data = row.to_hash
       sale = Sale.new(data)
       @sales_array << sale
-      found_employee = Employee.employee_named(row["last_name"])
+      found_employee = Employee.employee_named(row['last_name'])
       found_employee.add_sale(sale)
     end
     @sales_array
   end
-
 end
 
 filename = 'employee_data.csv'
 employees = Employee.load_employees(filename)
-
 sales_file = 'sales.csv'
+all_sales = Sale.sales_list(sales_file)
+
 # binding.pry
 employees.each do |person|
   puts "***#{person.name}***"
-  puts "Gross Salary: $#{person.gross_salary(sales_file).floor_to(2)}"
-  puts "Commission: $#{person.commission(sales_file).floor_to(2)}" if person.methods.include?(:commission)
-  puts "Net Pay: $#{person.net_pay(sales_file).floor_to(2)}"
+  puts "Gross Salary: $#{person.gross_salary.floor_to(2)}"
+  puts "Commission: $#{person.commission.floor_to(2)}" if person.methods.include?(:commission)
+  puts "Net Pay: $#{person.net_pay.floor_to(2)}"
   puts "***"
   puts
 end
-
-binding.pry
