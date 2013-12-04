@@ -74,6 +74,16 @@ class CommissionSalesPerson < Employee
     @commission = data['Commission'].to_f
   end
 
+  def my_sales(filename)
+    @my_sales = []
+    Sale.sales_list(filename).each do |row|
+      if self.name.include?(row.last_name)
+        @my_sales << row.gross_sale_value
+      end
+    end
+    @my_sales
+  end
+
   def commission(filename)
     gross_sales = 0
     Sale.sales_list(filename).each do |person|
@@ -141,6 +151,7 @@ class Sale
     end
     @sales_array
   end
+
 end
 
 class EmployeeReader
@@ -182,3 +193,5 @@ employees.list.each do |person|
   puts "***"
   puts
 end
+
+binding.pry
